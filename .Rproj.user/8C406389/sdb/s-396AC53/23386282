@@ -1,0 +1,20 @@
+{
+    "collab_server" : "",
+    "contents" : "#' Print \"Hello world\" \n#'\n#' This is a simple function that, by default, prints \"Hello world\". You can \n#' customize the text to print (using the \\code{to_print} argument) and add\n#' an exclamation point (\\code{excited = TRUE}).\n#'\n#' @param to_print A character string giving the text the function will print\n#' @param excited Logical value specifying whether to include an exclamation\n#'    point after the text\n#' \n#' @return This function returns a phrase to print, with or without an \n#'    exclamation point added. As a side effect, this function also prints out\n#'    the phrase. \n#'\n#' @examples\n#' hello_world()\n#' hello_world(excited = TRUE)\n#' hello_world(to_print = \"Hi world\")\n#'\n#' @export\nhello_world <- function(to_print = \"Hello world\", excited = FALSE){\n  if(excited) to_print <- paste0(to_print, \"!\")\n  print(to_print)\n}\n\n#' Read Function \n#'\n#' This is a simple function that checks to see if a file exists. You can \n#' customize the text to print (using the \\code{to_print} argument) and add\n#' an exclamation point (\\code{excited = TRUE}).\n#'\n#' @param filename A character string giving the text the function will print\n#' \n#' @return This function returns a phrase to print, with or without an \n#'    exclamation point added. As a side effect, this function also prints out\n#'    the phrase. \n#'\n#' @examples\n#' fars_read(\"test\")\n#'\n#' @export\nfars_read <- function(filename) {\n  if(!file.exists(filename))\n    stop(\"file '\", filename, \"' does not exist\")\n  data <- suppressMessages({\n    readr::read_csv(filename, progress = FALSE)\n  })\n  dplyr::tbl_df(data)\n}\n\nmake_filename <- function(year) {\n  year <- as.integer(year)\n  sprintf(\"accident_%d.csv.bz2\", year)\n}\n\nfars_read_years <- function(years) {\n  lapply(years, function(year) {\n    file <- make_filename(year)\n    tryCatch({\n      dat <- fars_read(file)\n      dplyr::mutate(dat, year = year) %>% \n        dplyr::select(MONTH, year)\n    }, error = function(e) {\n      warning(\"invalid year: \", year)\n      return(NULL)\n    })\n  })\n}\n\nfars_summarize_years <- function(years) {\n  dat_list <- fars_read_years(years)\n  dplyr::bind_rows(dat_list) %>% \n    dplyr::group_by(year, MONTH) %>% \n    dplyr::summarize(n = n()) %>%\n    tidyr::spread(year, n)\n}\n\nfars_map_state <- function(state.num, year) {\n  filename <- make_filename(year)\n  data <- fars_read(filename)\n  state.num <- as.integer(state.num)\n  \n  if(!(state.num %in% unique(data$STATE)))\n    stop(\"invalid STATE number: \", state.num)\n  data.sub <- dplyr::filter(data, STATE == state.num)\n  if(nrow(data.sub) == 0L) {\n    message(\"no accidents to plot\")\n    return(invisible(NULL))\n  }\n  is.na(data.sub$LONGITUD) <- data.sub$LONGITUD > 900\n  is.na(data.sub$LATITUDE) <- data.sub$LATITUDE > 90\n  with(data.sub, {\n    maps::map(\"state\", ylim = range(LATITUDE, na.rm = TRUE),\n              xlim = range(LONGITUD, na.rm = TRUE))\n    graphics::points(LONGITUD, LATITUDE, pch = 46)\n  })\n}",
+    "created" : 1502662950936.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2146958441",
+    "id" : "23386282",
+    "lastKnownWriteTime" : 1502663580,
+    "last_content_update" : 1502663580289,
+    "path" : "~/Personal Google Drive/Dropbox/Productivity/Learning/Programming/R/Coursera/CreatePackages/testPackage/R/fars_functions.R",
+    "project_path" : "testPackage/R/fars_functions.R",
+    "properties" : {
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
